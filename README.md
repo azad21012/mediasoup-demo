@@ -1,3 +1,11 @@
+# media-soup demo with socket.io 
+
+socket.io is a powerful library and has many features we can use them in our web-rtc projects.
+I remove protoo package and replace it by socket.io .
+this project summarized ! at this time users  can only enter the room and communicate each other 
+without disabling  microphone  and camera .
+
+a method was added by me named "runHttpServer" for running server in http protocol (useful for deploying and served by NGINX) 
 # mediasoup-demo v3
 
 A demo application of [mediasoup](https://mediasoup.org) **v3**.
@@ -119,7 +127,7 @@ $ MEDIASOUP_ANNOUNCED_IP=192.168.1.34 ./docker/run.sh
 
 * Iñaki Baz Castillo [[website](https://inakibaz.me)|[github](https://github.com/ibc/)]
 * José Luis Millán Villegas [[github](https://github.com/jmillan/)]
-
+* Azad Zarshad [[github](https://github.com/azad21012/)]
 
 ## License
 
