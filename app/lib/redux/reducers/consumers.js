@@ -17,7 +17,7 @@ const consumers = (state = initialState, action) =>
 		case 'ADD_CONSUMER':
 		{
 			const { consumer } = action.payload;
-
+			
 			return { ...state, [consumer.id]: consumer };
 		}
 

@@ -95,7 +95,7 @@ export default class PeerView extends React.Component
 			videoElemPaused,
 			maxSpatialLayer
 		} = this.state;
-
+		
 		return (
 			<div data-component='PeerView'>
 				<div className='info'>

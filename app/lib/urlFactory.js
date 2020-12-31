@@ -1,11 +1,12 @@
-let protooPort = 4443;
+let PORT = 4443;
+const IP = '192.168.1.2';
 
 if (window.location.hostname === 'test.mediasoup.org')
-	protooPort = 4444;
+	PORT = 4444;
 
-export function getProtooUrl({ roomId, peerId })
+export function getSocketUrl()
 {
-	const hostname = window.location.hostname;
+	const hostname = IP || window.location.hostname;
 
-	return `wss://${hostname}:${protooPort}/?roomId=${roomId}&peerId=${peerId}`;
+	return `https://${hostname}:${PORT}`;
 }

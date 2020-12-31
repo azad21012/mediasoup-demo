@@ -1,0 +1,19 @@
+FROM node:12.18.3
+
+WORKDIR /usr/app
+
+RUN \
+	set -x \
+	&& apt-get update \
+	&& apt-get install -y net-tools build-essential valgrind
+
+COPY ./package.json ./
+
+
+
+RUN npm install --production
+COPY . .
+  
+
+
+CMD ["node", "server.js"]

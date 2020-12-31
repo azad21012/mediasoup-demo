@@ -12,8 +12,7 @@ console.log('config.js:\n%s', JSON.stringify(config, null, '  '));
 
 const fs = require('fs');
 const https = require('https');
-const url = require('url');
-const protoo = require('protoo-server');
+const http = require('http');
 const mediasoup = require('mediasoup');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -41,9 +40,9 @@ let httpsServer;
 // @type {Function}
 let expressApp;
 
-// Protoo WebSocket server.
+// Socket.io WebSocket server.
 // @type {protoo.WebSocketServer}
-let protooWebSocketServer;
+let io;
 
 // mediasoup Workers.
 // @type {Array<mediasoup.Worker>}
@@ -73,9 +72,9 @@ async function run()
 	// Run HTTPS server.
 	await runHttpsServer();
 
-	// Run a protoo WebSocketServer.
-	await runProtooWebSocketServer();
+	// await runHttpServer();
 
+	await runIoWebSocketServer();
 	// Log rooms status every X seconds.
 	setInterval(() =>
 	{
@@ -161,260 +160,262 @@ async function createExpressApp()
 	 * API GET resource that returns the mediasoup Router RTP capabilities of
 	 * the room.
 	 */
-	expressApp.get(
-		'/rooms/:roomId', (req, res) =>
-		{
-			const data = req.room.getRouterRtpCapabilities();
+	// expressApp.get(
+	// 	'/rooms/:roomId', (req, res) =>
+	// 	{
+	// 		const data = req.room.getRouterRtpCapabilities();
 
-			res.status(200).json(data);
-		});
+	// 		res.status(200).json(data);
+	// 	});
 
-	/**
-	 * POST API to create a Broadcaster.
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters', async (req, res, next) =>
-		{
-			const {
-				id,
-				displayName,
-				device,
-				rtpCapabilities
-			} = req.body;
+	// /**
+	//  * POST API to create a Broadcaster.
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters', async (req, res, next) =>
+	// 	{
+	// 		const {
+	// 			id,
+	// 			displayName,
+	// 			device,
+	// 			rtpCapabilities
+	// 		} = req.body;
 
-			try
-			{
-				const data = await req.room.createBroadcaster(
-					{
-						id,
-						displayName,
-						device,
-						rtpCapabilities
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.createBroadcaster(
+	// 				{
+	// 					id,
+	// 					displayName,
+	// 					device,
+	// 					rtpCapabilities
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 
-	/**
-	 * DELETE API to delete a Broadcaster.
-	 */
-	expressApp.delete(
-		'/rooms/:roomId/broadcasters/:broadcasterId', (req, res) =>
-		{
-			const { broadcasterId } = req.params;
+	// /**
+	//  * DELETE API to delete a Broadcaster.
+	//  */
+	// expressApp.delete(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId', (req, res) =>
+	// 	{
+	// 		const { broadcasterId } = req.params;
 
-			req.room.deleteBroadcaster({ broadcasterId });
+	// 		req.room.deleteBroadcaster({ broadcasterId });
 
-			res.status(200).send('broadcaster deleted');
-		});
+	// 		res.status(200).send('broadcaster deleted');
+	// 	});
 
-	/**
-	 * POST API to create a mediasoup Transport associated to a Broadcaster.
-	 * It can be a PlainTransport or a WebRtcTransport depending on the
-	 * type parameters in the body. There are also additional parameters for
-	 * PlainTransport.
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters/:broadcasterId/transports',
-		async (req, res, next) =>
-		{
-			const { broadcasterId } = req.params;
-			const { type, rtcpMux, comedia, sctpCapabilities } = req.body;
+	// /**
+	//  * POST API to create a mediasoup Transport associated to a Broadcaster.
+	//  * It can be a PlainTransport or a WebRtcTransport depending on the
+	//  * type parameters in the body. There are also additional parameters for
+	//  * PlainTransport.
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId/transports',
+	// 	async (req, res, next) =>
+	// 	{
+	// 		const { broadcasterId } = req.params;
+	// 		const { type, rtcpMux, comedia, sctpCapabilities } = req.body;
 
-			try
-			{
-				const data = await req.room.createBroadcasterTransport(
-					{
-						broadcasterId,
-						type,
-						rtcpMux,
-						comedia, 
-						sctpCapabilities
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.createBroadcasterTransport(
+	// 				{
+	// 					broadcasterId,
+	// 					type,
+	// 					rtcpMux,
+	// 					comedia, 
+	// 					sctpCapabilities
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 
-	/**
-	 * POST API to connect a Transport belonging to a Broadcaster. Not needed
-	 * for PlainTransport if it was created with comedia option set to true.
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/connect',
-		async (req, res, next) =>
-		{
-			const { broadcasterId, transportId } = req.params;
-			const { dtlsParameters } = req.body;
+	// /**
+	//  * POST API to connect a Transport belonging to a Broadcaster. Not needed
+	//  * for PlainTransport if it was created with comedia option set to true.
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/connect',
+	// 	async (req, res, next) =>
+	// 	{
+	// 		const { broadcasterId, transportId } = req.params;
+	// 		const { dtlsParameters } = req.body;
 
-			try
-			{
-				const data = await req.room.connectBroadcasterTransport(
-					{
-						broadcasterId,
-						transportId,
-						dtlsParameters
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.connectBroadcasterTransport(
+	// 				{
+	// 					broadcasterId,
+	// 					transportId,
+	// 					dtlsParameters
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 
-	/**
-	 * POST API to create a mediasoup Producer associated to a Broadcaster.
-	 * The exact Transport in which the Producer must be created is signaled in
-	 * the URL path. Body parameters include kind and rtpParameters of the
-	 * Producer.
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/producers',
-		async (req, res, next) =>
-		{
-			const { broadcasterId, transportId } = req.params;
-			const { kind, rtpParameters } = req.body;
+	// /**
+	//  * POST API to create a mediasoup Producer associated to a Broadcaster.
+	//  * The exact Transport in which the Producer must be created is signaled in
+	//  * the URL path. Body parameters include kind and rtpParameters of the
+	//  * Producer.
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/producers',
+	// 	async (req, res, next) =>
+	// 	{
+	// 		const { broadcasterId, transportId } = req.params;
+	// 		const { kind, rtpParameters } = req.body;
 
-			try
-			{
-				const data = await req.room.createBroadcasterProducer(
-					{
-						broadcasterId,
-						transportId,
-						kind,
-						rtpParameters
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.createBroadcasterProducer(
+	// 				{
+	// 					broadcasterId,
+	// 					transportId,
+	// 					kind,
+	// 					rtpParameters
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 
-	/**
-	 * POST API to create a mediasoup Consumer associated to a Broadcaster.
-	 * The exact Transport in which the Consumer must be created is signaled in
-	 * the URL path. Query parameters must include the desired producerId to
-	 * consume.
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/consume',
-		async (req, res, next) =>
-		{
-			const { broadcasterId, transportId } = req.params;
-			const { producerId } = req.query;
+	// /**
+	//  * POST API to create a mediasoup Consumer associated to a Broadcaster.
+	//  * The exact Transport in which the Consumer must be created is signaled in
+	//  * the URL path. Query parameters must include the desired producerId to
+	//  * consume.
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/consume',
+	// 	async (req, res, next) =>
+	// 	{
+	// 		const { broadcasterId, transportId } = req.params;
+	// 		const { producerId } = req.query;
 
-			try
-			{
-				const data = await req.room.createBroadcasterConsumer(
-					{
-						broadcasterId,
-						transportId,
-						producerId
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.createBroadcasterConsumer(
+	// 				{
+	// 					broadcasterId,
+	// 					transportId,
+	// 					producerId
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 
-	/**
-	 * POST API to create a mediasoup DataConsumer associated to a Broadcaster.
-	 * The exact Transport in which the DataConsumer must be created is signaled in
-	 * the URL path. Query body must include the desired producerId to
-	 * consume.
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/consume/data',
-		async (req, res, next) =>
-		{
-			const { broadcasterId, transportId } = req.params;
-			const { dataProducerId } = req.body;
+	// /**
+	//  * POST API to create a mediasoup DataConsumer associated to a Broadcaster.
+	//  * The exact Transport in which the DataConsumer must be created is signaled in
+	//  * the URL path. Query body must include the desired producerId to
+	//  * consume.
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/consume/data',
+	// 	async (req, res, next) =>
+	// 	{
+	// 		const { broadcasterId, transportId } = req.params;
+	// 		const { dataProducerId } = req.body;
 
-			try
-			{
-				const data = await req.room.createBroadcasterDataConsumer(
-					{
-						broadcasterId,
-						transportId,
-						dataProducerId
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.createBroadcasterDataConsumer(
+	// 				{
+	// 					broadcasterId,
+	// 					transportId,
+	// 					dataProducerId
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 	
-	/**
-	 * POST API to create a mediasoup DataProducer associated to a Broadcaster.
-	 * The exact Transport in which the DataProducer must be created is signaled in
-	 */
-	expressApp.post(
-		'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/produce/data',
-		async (req, res, next) =>
-		{
-			const { broadcasterId, transportId } = req.params;
-			const { label, protocol, sctpStreamParameters, appData } = req.body;
+	// /**
+	//  * POST API to create a mediasoup DataProducer associated to a Broadcaster.
+	//  * The exact Transport in which the DataProducer must be created is signaled in
+	//  */
+	// expressApp.post(
+	// 	'/rooms/:roomId/broadcasters/:broadcasterId/transports/:transportId/produce/data',
+	// 	async (req, res, next) =>
+	// 	{
+	// 		const { broadcasterId, transportId } = req.params;
+	// 		const { label, protocol, sctpStreamParameters, appData } = req.body;
 
-			try
-			{
-				const data = await req.room.createBroadcasterDataProducer(
-					{
-						broadcasterId,
-						transportId,
-						label,
-						protocol,
-						sctpStreamParameters,
-						appData
-					});
+	// 		try
+	// 		{
+	// 			const data = await req.room.createBroadcasterDataProducer(
+	// 				{
+	// 					broadcasterId,
+	// 					transportId,
+	// 					label,
+	// 					protocol,
+	// 					sctpStreamParameters,
+	// 					appData
+	// 				});
 
-				res.status(200).json(data);
-			}
-			catch (error)
-			{
-				next(error);
-			}
-		});
+	// 			res.status(200).json(data);
+	// 		}
+	// 		catch (error)
+	// 		{
+	// 			next(error);
+	// 		}
+	// 	});
 
-	/**
-	 * Error handler.
-	 */
-	expressApp.use(
-		(error, req, res, next) =>
-		{
-			if (error)
-			{
-				logger.warn('Express app %s', String(error));
+	// /**
+	//  * Error handler.
+	//  */
+	// expressApp.use(
+	// 	(error, req, res, next) =>
+	// 	{
+	// 		if (error)
+	// 		{
+	// 			logger.warn('Express app %s', String(error));
 
-				error.status = error.status || (error.name === 'TypeError' ? 400 : 500);
+	// 			error.status = error.status || (error.name === 'TypeError' ? 400 : 500);
 
-				res.statusMessage = error.message;
-				res.status(error.status).send(String(error));
-			}
-			else
-			{
-				next();
-			}
-		});
+	// 			res.statusMessage = error.message;
+	// 			res.status(error.status).send(String(error));
+	// 		}
+	// 		else
+	// 		{
+	// 			next();
+	// 		}
+	// 	});
+	// expressApp.use('/kavidu', require('./routes'));
+
 }
 
 /**
@@ -441,61 +442,84 @@ async function runHttpsServer()
 	});
 }
 
-/**
- * Create a protoo WebSocketServer to allow WebSocket connections from browsers.
- */
-async function runProtooWebSocketServer()
+async function runHttpServer()
 {
-	logger.info('running protoo WebSocketServer...');
+	logger.info('running an HTTP server...');
 
-	// Create the protoo WebSocket server.
-	protooWebSocketServer = new protoo.WebSocketServer(httpsServer,
-		{
-			maxReceivedFrameSize     : 960000, // 960 KBytes.
-			maxReceivedMessageSize   : 960000,
-			fragmentOutgoingMessages : true,
-			fragmentationThreshold   : 960000
-		});
+	// HTTPS server for the protoo WebSocket server.
 
-	// Handle connections from clients.
-	protooWebSocketServer.on('connectionrequest', (info, accept, reject) =>
+	httpsServer = http.createServer(expressApp);
+
+	await new Promise((resolve) =>
 	{
-		// The client indicates the roomId and peerId in the URL query.
-		const u = url.parse(info.request.url, true);
-		const roomId = u.query['roomId'];
-		const peerId = u.query['peerId'];
-
-		if (!roomId || !peerId)
-		{
-			reject(400, 'Connection request without roomId and/or peerId');
-
-			return;
-		}
-
-		logger.info(
-			'protoo connection request [roomId:%s, peerId:%s, address:%s, origin:%s]',
-			roomId, peerId, info.socket.remoteAddress, info.origin);
-
-		// Serialize this code into the queue to avoid that two peers connecting at
-		// the same time with the same roomId create two separate rooms with same
-		// roomId.
-		queue.push(async () =>
-		{
-			const room = await getOrCreateRoom({ roomId });
-
-			// Accept the protoo WebSocket connection.
-			const protooWebSocketTransport = accept();
-
-			room.handleProtooConnection({ peerId, protooWebSocketTransport });
-		})
-			.catch((error) =>
-			{
-				logger.error('room creation or room joining failed:%o', error);
-
-				reject(error);
-			});
+		httpsServer.listen(
+			Number(config.http.listenPort), config.http.listenIp, resolve);
 	});
 }
+
+/**
+ * Create a socket.io WebSocketServer to allow WebSocket connections from browsers.
+ */
+async function runIoWebSocketServer()
+{
+	logger.info('running socket.io WebSocketServer...');
+	io = require('socket.io')(httpsServer, {
+		cors : {
+			origin  : '*',
+			methods : [ 'GET', 'POST' ]
+		}
+	});
+	
+	// Handle connections from clients.
+	io.on('connection', (socket) =>
+	{
+
+		socket.on('prepare_room', async (data, callback) => 
+		{
+		// if (!roomId || !peerId)
+		// {
+		// 	reject(400, 'Connection request without roomId and/or peerId');
+
+			// 	return;
+			// }
+			// logger.info(
+			// 	'protoo connection request [roomId:%s, peerId:%s, address:%s, origin:%s]',
+			// 	roomId, peerId, info.socket.remoteAddress, info.origin);
+
+			// Serialize this code into the queue to avoid that two peers connecting at
+			// the same time with the same roomId create two separate rooms with same
+			// roomId.
+			const roomId = data.roomId;
+
+			const peerId = socket.id;
+
+			queue.push(async () =>
+			{
+				const room = await getOrCreateRoom({ roomId, socket });
+				// Accept the protoo WebSocket connection.
+				// const peer = socket;
+
+				room.handleProtooConnection({ peerId, socket });
+			})
+				.catch((error) =>
+				{
+					logger.error('room creation or room joining failed:%o', error);
+
+				// reject(error);
+				});
+			// --- socket.io room ---
+			socket.join(roomId);
+			sendResponse('joinRoom', callback);
+		
+		});
+
+	});
+}
+function sendResponse(response, callback) 
+{
+	callback(null, response);
+}
+
 
 /**
  * Get next mediasoup Worker.
@@ -513,7 +537,7 @@ function getMediasoupWorker()
 /**
  * Get a Room instance (or create one if it does not exist).
  */
-async function getOrCreateRoom({ roomId })
+async function getOrCreateRoom({ roomId, socket })
 {
 	let room = rooms.get(roomId);
 
@@ -524,10 +548,14 @@ async function getOrCreateRoom({ roomId })
 
 		const mediasoupWorker = getMediasoupWorker();
 
-		room = await Room.create({ mediasoupWorker, roomId });
+		room = await Room.create({ mediasoupWorker, roomId, socket });
 
 		rooms.set(roomId, room);
 		room.on('close', () => rooms.delete(roomId));
+	}
+	else 
+	{
+		logger.info('Room exist [roomId:%s]', roomId);
 	}
 
 	return room;

@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "description": "mediasoup demo app",
-  "author": "Iñaki Baz Castillo <ibc@aliax.net>",
+  "author": "Azad Zarshad",
   "license": "All Rights Reserved",
   "main": "lib/index.jsx",
   "scripts": {
@@ -23,7 +23,6 @@
     "mediasoup-client": "github:versatica/mediasoup-client#v3",
     "pokemon": "^2.0.2",
     "prop-types": "^15.7.2",
-    "protoo-client": "^4.0.4",
     "random-string": "^0.2.0",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
@@ -37,6 +36,7 @@
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.3.0",
     "riek": "^1.1.0",
+    "socket.io-client": "^3.0.4",
     "url-parse": "^1.4.7"
   },
   "devDependencies": {

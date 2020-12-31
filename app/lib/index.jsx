@@ -185,9 +185,9 @@ async function run()
 
 	// NOTE: For debugging.
 	// eslint-disable-next-line require-atomic-updates
-	window.CLIENT = roomClient;
+	// window.CLIENT = roomClient;
 	// eslint-disable-next-line require-atomic-updates
-	window.CC = roomClient;
+	// window.CC = roomClient;
 
 	render(
 		<Provider store={store}>
@@ -201,129 +201,129 @@ async function run()
 
 // NOTE: Debugging stuff.
 
-window.__sendSdps = function()
-{
-	logger.warn('>>> send transport local SDP offer:');
-	logger.warn(
-		roomClient._sendTransport._handler._pc.localDescription.sdp);
+// window.__sendSdps = function()
+// {
+// 	logger.warn('>>> send transport local SDP offer:');
+// 	logger.warn(
+// 		roomClient._sendTransport._handler._pc.localDescription.sdp);
 
-	logger.warn('>>> send transport remote SDP answer:');
-	logger.warn(
-		roomClient._sendTransport._handler._pc.remoteDescription.sdp);
-};
+// 	logger.warn('>>> send transport remote SDP answer:');
+// 	logger.warn(
+// 		roomClient._sendTransport._handler._pc.remoteDescription.sdp);
+// };
 
-window.__recvSdps = function()
-{
-	logger.warn('>>> recv transport remote SDP offer:');
-	logger.warn(
-		roomClient._recvTransport._handler._pc.remoteDescription.sdp);
+// window.__recvSdps = function()
+// {
+// 	logger.warn('>>> recv transport remote SDP offer:');
+// 	logger.warn(
+// 		roomClient._recvTransport._handler._pc.remoteDescription.sdp);
 
-	logger.warn('>>> recv transport local SDP answer:');
-	logger.warn(
-		roomClient._recvTransport._handler._pc.localDescription.sdp);
-};
+// 	logger.warn('>>> recv transport local SDP answer:');
+// 	logger.warn(
+// 		roomClient._recvTransport._handler._pc.localDescription.sdp);
+// };
 
-let dataChannelTestInterval = null;
+// let dataChannelTestInterval = null;
 
-window.__startDataChannelTest = function()
-{
-	let number = 0;
+// window.__startDataChannelTest = function()
+// {
+// 	let number = 0;
 
-	const buffer = new ArrayBuffer(32);
-	const view = new DataView(buffer);
+// 	const buffer = new ArrayBuffer(32);
+// 	const view = new DataView(buffer);
 
-	dataChannelTestInterval = window.setInterval(() =>
-	{
-		if (window.DP)
-		{
-			view.setUint32(0, number++);
-			roomClient.sendChatMessage(buffer);
-		}
-	}, 100);
-};
+// 	dataChannelTestInterval = window.setInterval(() =>
+// 	{
+// 		if (window.DP)
+// 		{
+// 			view.setUint32(0, number++);
+// 			roomClient.sendChatMessage(buffer);
+// 		}
+// 	}, 100);
+// };
 
-window.__stopDataChannelTest = function()
-{
-	window.clearInterval(dataChannelTestInterval);
+// window.__stopDataChannelTest = function()
+// {
+// 	window.clearInterval(dataChannelTestInterval);
 
-	const buffer = new ArrayBuffer(32);
-	const view = new DataView(buffer);
+// 	const buffer = new ArrayBuffer(32);
+// 	const view = new DataView(buffer);
 
-	if (window.DP)
-	{
-		view.setUint32(0, Math.pow(2, 32) - 1);
-		window.DP.send(buffer);
-	}
-};
+// 	if (window.DP)
+// 	{
+// 		view.setUint32(0, Math.pow(2, 32) - 1);
+// 		window.DP.send(buffer);
+// 	}
+// };
 
-window.__testSctp = async function({ timeout = 100, bot = false } = {})
-{
-	let dp;
+// window.__testSctp = async function({ timeout = 100, bot = false } = {})
+// {
+// 	let dp;
 
-	if (!bot)
-	{
-		await window.CLIENT.enableChatDataProducer();
+// 	if (!bot)
+// 	{
+// 		await window.CLIENT.enableChatDataProducer();
 
-		dp = window.CLIENT._chatDataProducer;
-	}
-	else
-	{
-		await window.CLIENT.enableBotDataProducer();
+// 		dp = window.CLIENT._chatDataProducer;
+// 	}
+// 	else
+// 	{
+// 		await window.CLIENT.enableBotDataProducer();
 
-		dp = window.CLIENT._botDataProducer;
-	}
+// 		dp = window.CLIENT._botDataProducer;
+// 	}
 
-	logger.warn(
-		'<<< testSctp: DataProducer created [bot:%s, streamId:%d, readyState:%s]',
-		bot ? 'true' : 'false',
-		dp.sctpStreamParameters.streamId,
-		dp.readyState);
+// 	logger.warn(
+// 		'<<< testSctp: DataProducer created [bot:%s, streamId:%d, readyState:%s]',
+// 		bot ? 'true' : 'false',
+// 		dp.sctpStreamParameters.streamId,
+// 		dp.readyState);
 
-	function send()
-	{
-		dp.send(`I am streamId ${dp.sctpStreamParameters.streamId}`);
-	}
+// 	function send()
+// 	{
+// 		dp.send(`I am streamId ${dp.sctpStreamParameters.streamId}`);
+// 	}
 
-	if (dp.readyState === 'open')
-	{
-		send();
-	}
-	else
-	{
-		dp.on('open', () =>
-		{
-			logger.warn(
-				'<<< testSctp: DataChannel open [streamId:%d]',
-				dp.sctpStreamParameters.streamId);
+// 	if (dp.readyState === 'open')
+// 	{
+// 		send();
+// 	}
+// 	else
+// 	{
+// 		dp.on('open', () =>
+// 		{
+// 			logger.warn(
+// 				'<<< testSctp: DataChannel open [streamId:%d]',
+// 				dp.sctpStreamParameters.streamId);
 
-			send();
-		});
-	}
+// 			send();
+// 		});
+// 	}
 
-	setTimeout(() => window.__testSctp({ timeout, bot }), timeout);
-};
+// 	setTimeout(() => window.__testSctp({ timeout, bot }), timeout);
+// };
 
-setInterval(() =>
-{
-	if (window.CLIENT._sendTransport)
-	{
-		window.H1 = window.CLIENT._sendTransport._handler;
-		window.PC1 = window.CLIENT._sendTransport._handler._pc;
-		window.DP = window.CLIENT._chatDataProducer;
-	}
-	else
-	{
-		delete window.PC1;
-		delete window.DP;
-	}
+// setInterval(() =>
+// {
+// 	if (window.CLIENT._sendTransport)
+// 	{
+// 		window.H1 = window.CLIENT._sendTransport._handler;
+// 		window.PC1 = window.CLIENT._sendTransport._handler._pc;
+// 		window.DP = window.CLIENT._chatDataProducer;
+// 	}
+// 	else
+// 	{
+// 		delete window.PC1;
+// 		delete window.DP;
+// 	}
 
-	if (window.CLIENT._recvTransport)
-	{
-		window.H2 = window.CLIENT._recvTransport._handler;
-		window.PC2 = window.CLIENT._recvTransport._handler._pc;
-	}
-	else
-	{
-		delete window.PC2;
-	}
-}, 2000);
+// 	if (window.CLIENT._recvTransport)
+// 	{
+// 		window.H2 = window.CLIENT._recvTransport._handler;
+// 		window.PC2 = window.CLIENT._recvTransport._handler._pc;
+// 	}
+// 	else
+// 	{
+// 		delete window.PC2;
+// 	}
+// }, 2000);

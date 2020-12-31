@@ -595,6 +595,7 @@ function runMediasoupObserver()
 
 				transport.observer.on('newproducer', (producer) =>
 				{
+
 					// Store the latest producer in a global variable.
 					global.producer = producer;
 

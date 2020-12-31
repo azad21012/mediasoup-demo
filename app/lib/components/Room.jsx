@@ -32,12 +32,12 @@ class Room extends React.Component
 				<div data-component='Room'>
 					<Notifications />
 
-					<div className='state'>
+					{/* <div className='state'>
 						<div className={classnames('icon', room.state)} />
 						<p className={classnames('text', room.state)}>{room.state}</p>
-					</div>
+					</div> */}
 
-					<div className='room-link-wrapper'>
+					{/* <div className='room-link-wrapper'>
 						<div className='room-link'>
 							<a
 								className='link'
@@ -66,7 +66,7 @@ class Room extends React.Component
 								invitation link
 							</a>
 						</div>
-					</div>
+					</div> */}
 
 					<Peers />
 
@@ -78,11 +78,11 @@ class Room extends React.Component
 						<Me />
 					</div>
 
-					<div className='chat-input-container'>
+					{/* <div className='chat-input-container'>
 						<ChatInput />
-					</div>
+					</div> */}
 
-					<div className='sidebar'>
+					{/* <div className='sidebar'>
 						<div
 							className={classnames('button', 'hide-videos', {
 								on       : me.audioOnly,
@@ -117,9 +117,9 @@ class Room extends React.Component
 							data-tip='Restart ICE'
 							onClick={() => roomClient.restartIce()}
 						/>
-					</div>
+					</div> */}
 
-					<Stats />
+					{/* <Stats /> */}
 
 					<If condition={window.NETWORK_THROTTLE_SECRET}>
 						<NetworkThrottle
