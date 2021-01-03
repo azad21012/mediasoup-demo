@@ -218,7 +218,7 @@ export default class RoomClient
 		this._webcam =
 		{
 			device     : null,
-			resolution : 'hd'
+			resolution : 'qvga'
 		};
 
 		// Set custom SVC scalability mode.
@@ -240,7 +240,8 @@ export default class RoomClient
 
 		// ?????????
 		// Close socket Peer
-		this.socket.close();
+		// Do Not close Socket for reconnecting
+		// this.socket.close();
 
 		// Close mediasoup Transports.
 		if (this._sendTransport)
@@ -275,9 +276,9 @@ export default class RoomClient
 	{
 
 		this.socket = io(getSocketUrl(), {
-			path : '/socket.io/app'
+			path                 : '/socket.io/kavidu',
 			// 	//   query: { token }, 
-			// 	  reconnectionAttempts: 20,
+			reconnectionAttempts : 20
 		});
 
 		this.socket.on('connect', async (evt) =>
@@ -732,7 +733,7 @@ export default class RoomClient
 
 		try
 		{
-			await this.sendRequest.request(
+			await this.sendRequest(
 				'closeProducer', { producerId: this._micProducer.id });
 		}
 		catch (error)
@@ -752,12 +753,11 @@ export default class RoomClient
 		logger.debug('muteMic()');
 
 		this._micProducer.pause();
-
 		try
 		{
-			await this.sendRequest.request(
+			await this.sendRequest(
 				'pauseProducer', { producerId: this._micProducer.id });
-
+			
 			store.dispatch(
 				stateActions.setProducerPaused(this._micProducer.id));
 		}
@@ -781,7 +781,7 @@ export default class RoomClient
 
 		try
 		{
-			await this.sendRequest.request(
+			await this.sendRequest(
 				'resumeProducer', { producerId: this._micProducer.id });
 
 			store.dispatch(
@@ -965,13 +965,12 @@ export default class RoomClient
 			return;
 
 		this._webcamProducer.close();
-
 		store.dispatch(
 			stateActions.removeProducer(this._webcamProducer.id));
 
 		try
 		{
-			await this.sendRequest.request(
+			await this.sendRequest(
 				'closeProducer', { producerId: this._webcamProducer.id });
 		}
 		catch (error)
