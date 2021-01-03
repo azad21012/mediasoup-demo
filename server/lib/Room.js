@@ -1,5 +1,4 @@
 const EventEmitter = require('events').EventEmitter;
-const protoo = require('protoo-server');
 const throttle = require('@sitespeed.io/throttle');
 const Logger = require('./Logger');
 const config = require('../config');
@@ -150,7 +149,6 @@ class Room extends EventEmitter
 
 		// Close the Bot.
 		this._bot.close();
-
 		// Emit 'close' event.
 		this.emit('close');
 
@@ -192,7 +190,7 @@ class Room extends EventEmitter
 	handleProtooConnection({ peerId, consume, socket })
 	{
 		const existingPeer = this.peers.get(peerId);
-
+		
 		if (existingPeer)
 		{
 			logger.warn(
@@ -259,14 +257,14 @@ class Room extends EventEmitter
 			this.peers.delete(peer.data.id);
 			// this.close();
 			// If this is the latest Peer in the room, close the room.
-			// if (peers.length === 0)
-			// {
-			// 	logger.info(
-			// 		'last Peer in the room left, closing the room [roomId:%s]',
-			// 		this._roomId);
+			if (this.peers.size === 0)
+			{
+				logger.info(
+					'last Peer in the room left, closing the room [roomId:%s]',
+					this._roomId);
 
-			// 	this.close();
-			// }
+				this.close();
+			}
 		});
 
 		peer.on('createWebRtcTransport', async (data, callback) => 
@@ -362,6 +360,105 @@ class Room extends EventEmitter
 			if (!transport)
 				throw new Error(`transport with id "${transportId}" not found`);
 			await transport.connect({ dtlsParameters });
+			this.sendResponse(
+				'accept',
+				callback
+			);
+		});
+		peer.on('resumeProducer', async (data, callback) => 
+		{
+			// Ensure the Peer is joined.
+			if (!peer.data.joined)
+				throw new Error('Peer not yet joined');
+
+			const { producerId } = data;
+			const producer = peer.data.producers.get(producerId);
+
+			if (!producer)
+				throw new Error(`producer with id "${producerId}" not found`);
+
+			await producer.resume();
+
+			this.sendResponse(
+				'accept',
+				callback
+			);
+		});
+		peer.on('pauseConsumer', async (data, callback) => 
+		{
+			// Ensure the Peer is joined.
+			if (!peer.data.joined)
+				throw new Error('Peer not yet joined');
+
+			const { consumerId } = data;
+			const consumer = peer.data.consumers.get(consumerId);
+
+			if (!consumer)
+				throw new Error(`consumer with id "${consumerId}" not found`);
+
+			await consumer.pause();
+
+			this.sendResponse(
+				'accept',
+				callback
+			);
+		});
+		peer.on('closeProducer', async (data, callback) => 
+		{
+			// Ensure the Peer is joined.
+			if (!peer.data.joined)
+				throw new Error('Peer not yet joined');
+
+			const { producerId } = data;
+			const producer = peer.data.producers.get(producerId);
+
+			if (!producer)
+				throw new Error(`producer with id "${producerId}" not found`);
+
+			producer.close();
+
+			// Remove from its map.
+			peer.data.producers.delete(producer.id);
+			this.sendResponse(
+				'accept',
+				callback
+			);
+		});
+
+		peer.on('resumeConsumer', async (data, callback) => 
+		{
+			// Ensure the Peer is joined.
+			if (!peer.data.joined)
+				throw new Error('Peer not yet joined');
+
+			const { consumerId } = data;
+			const consumer = peer.data.consumers.get(consumerId);
+
+			if (!consumer)
+				throw new Error(`consumer with id "${consumerId}" not found`);
+
+			await consumer.resume();
+
+			this.sendResponse(
+				'accept',
+				callback
+			);
+
+		});
+		peer.on('pauseProducer', async (data, callback) => 
+		{
+			// Ensure the Peer is joined.
+			if (!peer.data.joined)
+				throw new Error('Peer not yet joined');
+
+			const { producerId } = data;
+			const producer = peer.data.producers.get(producerId);
+
+			if (!producer)
+				throw new Error(`producer with id "${producerId}" not found`);
+
+			await producer.pause();
+
 			this.sendResponse(
 				'accept',
 				callback
